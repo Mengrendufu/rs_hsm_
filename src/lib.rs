@@ -185,13 +185,14 @@ impl<C: SM_HsmImpl, const SM_MAX_NEST_DEPTH_: usize> SM_Hsm<C, SM_MAX_NEST_DEPTH
         path: &mut [Option<SM_StatePtr<C>>; SM_MAX_NEST_DEPTH_],
     ) -> usize {
         let mut len = 0usize;
-        let stop = self.curr;
+        let curr = self.curr.expect("current state must exist");
         let mut cursor = Some(target);
+        let mut reached_curr = false;
 
         while let Some(s) = cursor {
-            match stop {
-                Some(curr) if ptr::eq(s, curr) => break,
-                _ => {}
+            if ptr::eq(s, curr) {
+                reached_curr = true;
+                break;
             }
             assert!(
                 len < SM_MAX_NEST_DEPTH_,
@@ -201,6 +202,11 @@ impl<C: SM_HsmImpl, const SM_MAX_NEST_DEPTH_: usize> SM_Hsm<C, SM_MAX_NEST_DEPTH
             len += 1;
             cursor = s.super_;
         }
+
+        assert!(
+            reached_curr,
+            "initial transition target must be a descendant of current state"
+        );
 
         len
     }

@@ -118,3 +118,47 @@ fn ignored_event_keeps_state_and_reports_ignored() {
     assert_eq!(machine.trace(), trace_before);
     assert_eq!(machine.curr_name(), "S211");
 }
+
+#[test]
+#[should_panic(expected = "initial transition target must be a descendant of current state")]
+fn init_target_must_be_descendant_of_current_state() {
+    struct BadCtx;
+    struct BadChart;
+
+    impl rs_hsm_::SM_HsmImpl for BadChart {
+        type Context = BadCtx;
+        type Event = ();
+
+        fn TOP_initial(_me: &mut Self::Context) -> rs_hsm_::SM_StatePtr<Self> {
+            &BAD_PARENT
+        }
+    }
+
+    fn bad_parent_init(_me: &mut BadCtx) -> rs_hsm_::SM_StatePtr<BadChart> {
+        &BAD_SIBLING
+    }
+
+    fn bad_state_handler(_me: &mut BadCtx, _e: &()) -> rs_hsm_::SM_RetState<BadChart> {
+        rs_hsm_::SM_RetState::Handled
+    }
+
+    static BAD_PARENT: rs_hsm_::SM_HsmState<BadChart> = rs_hsm_::SM_HsmState {
+        super_: None,
+        init_: Some(bad_parent_init),
+        entry_: None,
+        exit_: None,
+        handler_: bad_state_handler,
+    };
+
+    static BAD_SIBLING: rs_hsm_::SM_HsmState<BadChart> = rs_hsm_::SM_HsmState {
+        super_: None,
+        init_: None,
+        entry_: None,
+        exit_: None,
+        handler_: bad_state_handler,
+    };
+
+    let mut ctx = BadCtx;
+    let mut hsm = rs_hsm_::SM_Hsm::<BadChart>::new();
+    hsm.init(&mut ctx);
+}
