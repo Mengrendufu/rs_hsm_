@@ -4,6 +4,10 @@ use core::ptr;
 use rs_hsm_::{SM_Hsm, SM_HsmState, SM_HsmTrait, SM_RetState, SM_StatePtr};
 use std::string::String;
 
+//============================================================================
+// hsmtst model
+//============================================================================
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SmHsmTstSig {
     A_SIG,
@@ -326,6 +330,12 @@ static SmHsmTst_s211: SM_HsmState<SmHsmTstSpec> = SM_HsmState {
     handler_: SmHsmTst_s211_,
 };
 
+//============================================================================
+// Test/observation adapter
+//============================================================================
+// The code below is not part of the HSM runtime semantics. It exists so tests
+// and the example binary can observe trace output and current state names.
+
 fn SmHsmTst_state_name(state: SM_StatePtr<SmHsmTstSpec>) -> &'static str {
     if ptr::eq(state, &SmHsmTst_s) {
         "S"
@@ -372,11 +382,13 @@ impl SmHsmTst {
         }
     }
 
+    // TEST-ONLY: exposes trace text for assertions and example output.
     #[allow(dead_code)]
     pub fn trace(&self) -> &str {
         &self.trace
     }
 
+    // TEST-ONLY: converts the current state pointer into a readable name.
     #[allow(dead_code)]
     pub fn curr_name(&self) -> &'static str {
         SmHsmTst_state_name(
@@ -398,11 +410,13 @@ impl SmHsmTst {
         }
     }
 
+    // TEST-ONLY: adds readable separators between dispatched events.
     pub fn dispatch_with_separator(&mut self, sig: SmHsmTstSig) {
         SmHsmTst_trace(self, "\n");
         self.dispatch(sig);
     }
 
+    // TEST-ONLY: consumes the machine and returns observable test output.
     pub fn finish(self) -> SmHsmTstRun {
         let curr_name = SmHsmTst_state_name(
             self.sm_hsm_
@@ -420,6 +434,7 @@ impl Default for SmHsmTst {
     }
 }
 
+// TEST-ONLY: runs reference event sequences for unit tests and example output.
 pub fn SmHsmTst_run_sequence(signals: &[SmHsmTstSig]) -> SmHsmTstRun {
     let mut machine = SmHsmTst::new();
     for &sig in signals {
@@ -428,6 +443,7 @@ pub fn SmHsmTst_run_sequence(signals: &[SmHsmTstSig]) -> SmHsmTstRun {
     machine.finish()
 }
 
+// TEST-ONLY: command-line selection helper for examples/hsmtst.rs.
 #[allow(dead_code)]
 pub fn SmHsmTst_select_sequence(arg: Option<&str>) -> &'static [SmHsmTstSig] {
     match arg.unwrap_or("b") {
