@@ -33,20 +33,20 @@
 状态之间不是通过 ID 查表，而是直接通过静态状态对象相互链接。
 
 ```rust
-use rs_hsm_::{SM_HsmImpl, SM_HsmState, SM_RetState, SM_StatePtr};
+use rs_hsm_::{SM_HsmTrait, SM_HsmState, SM_RetState, SM_StatePtr};
 
-struct MyChart;
-struct MyCtx;
+struct MyTrait;
+struct MyObject;
 enum MyEvt {
     Start,
 }
 
-fn MyState_(me: &mut MyCtx, e: &MyEvt) -> SM_RetState<MyChart> {
+fn MyState_(me: &mut MyObject, e: &MyEvt) -> SM_RetState<MyTrait> {
     let _ = (me, e);
     SM_RetState::Handled
 }
 
-static MyState: SM_HsmState<MyChart> = SM_HsmState {
+static MyState: SM_HsmState<MyTrait> = SM_HsmState {
     super_: None,
     init_: None,
     entry_: None,
@@ -54,11 +54,11 @@ static MyState: SM_HsmState<MyChart> = SM_HsmState {
     handler_: MyState_,
 };
 
-impl SM_HsmImpl for MyChart {
-    type Context = MyCtx;
-    type Event = MyEvt;
+impl SM_HsmTrait for MyTrait {
+    type ActiveObject = MyObject;
+    type AO_Evt = MyEvt;
 
-    fn TOP_initial(_: &mut Self::Context) -> SM_StatePtr<Self> {
+    fn TOP_initial(_: &mut Self::ActiveObject) -> SM_StatePtr<Self> {
         &MyState
     }
 }
@@ -69,11 +69,13 @@ impl SM_HsmImpl for MyChart {
 状态机处理器只要求状态图提供一个统一事件类型：
 
 ```rust
-impl SM_HsmImpl for MyChart {
-    type Context = MyCtx;
-    type Event = MyEvt;
+use rs_hsm_::SM_AssertInfo;
 
-    fn TOP_initial(_: &mut Self::Context) -> SM_StatePtr<Self> {
+impl SM_HsmTrait for MyTrait {
+    type ActiveObject = MyObject;
+    type AO_Evt = MyEvt;
+
+    fn TOP_initial(_: &mut Self::ActiveObject) -> SM_StatePtr<Self> {
         &MyState
     }
 }
@@ -84,6 +86,26 @@ impl SM_HsmImpl for MyChart {
 - 简单场景可以直接用事件枚举
 - 更复杂的应用可以把事件扩展为“事件枚举 + 负载”
 - 库本身不需要修改
+
+### 3. 断言钩子（适配 BSP）
+
+运行时契约检查对齐 Quantum Leaps SST 的 `dbc_assert.h`：故障信息只保留 `module + label`，最终通过
+系统级 `SM_onAssert()` 统一处理，默认实现是直接 `panic!`。
+
+应用侧需要自定义行为时，在 BSP/启动阶段安装系统级 hook：
+
+```rust
+use rs_hsm_::{SM_AssertInfo, SM_setOnAssert};
+
+fn BSP_onAssert(info: SM_AssertInfo) -> ! {
+    // 将断言信息记录到日志/LED/trace buffer，再阻塞或复位
+    panic!("[{}:{}] {:?}", info.module, info.label, info);
+}
+
+unsafe {
+    SM_setOnAssert(BSP_onAssert);
+}
+```
 
 ## 运行与测试
 
@@ -137,7 +159,7 @@ cargo test
 例如：
 
 ```rust
-use rs_hsm_::{SM_HsmImpl, SM_HsmState, SM_RetState, SM_StatePtr};
+use rs_hsm_::{SM_HsmTrait, SM_HsmState, SM_RetState, SM_StatePtr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppSig {
@@ -175,12 +197,12 @@ impl AppEvt {
     }
 }
 
-struct AppChart;
-struct AppCtx {
+struct AppTrait;
+struct AppObject {
     last_value: u16,
 }
 
-fn AppIdle_(me: &mut AppCtx, e: &AppEvt) -> SM_RetState<AppChart> {
+fn AppIdle_(me: &mut AppObject, e: &AppEvt) -> SM_RetState<AppTrait> {
     match e {
         AppEvt::START_SIG => SM_RetState::Tran(&AppRunning),
         AppEvt::DATA_SIG(data) if data.channel == 1 => {
@@ -191,7 +213,7 @@ fn AppIdle_(me: &mut AppCtx, e: &AppEvt) -> SM_RetState<AppChart> {
     }
 }
 
-fn AppRunning_(me: &mut AppCtx, e: &AppEvt) -> SM_RetState<AppChart> {
+fn AppRunning_(me: &mut AppObject, e: &AppEvt) -> SM_RetState<AppTrait> {
     let _ = me;
     match e {
         AppEvt::TIMEOUT_SIG(t) if t.id == 1 && t.ms > 100 => SM_RetState::Tran(&AppIdle),
@@ -199,7 +221,7 @@ fn AppRunning_(me: &mut AppCtx, e: &AppEvt) -> SM_RetState<AppChart> {
     }
 }
 
-static AppIdle: SM_HsmState<AppChart> = SM_HsmState {
+static AppIdle: SM_HsmState<AppTrait> = SM_HsmState {
     super_: None,
     init_: None,
     entry_: None,
@@ -207,7 +229,7 @@ static AppIdle: SM_HsmState<AppChart> = SM_HsmState {
     handler_: AppIdle_,
 };
 
-static AppRunning: SM_HsmState<AppChart> = SM_HsmState {
+static AppRunning: SM_HsmState<AppTrait> = SM_HsmState {
     super_: None,
     init_: None,
     entry_: None,
@@ -215,11 +237,11 @@ static AppRunning: SM_HsmState<AppChart> = SM_HsmState {
     handler_: AppRunning_,
 };
 
-impl SM_HsmImpl for AppChart {
-    type Context = AppCtx;
-    type Event = AppEvt;
+impl SM_HsmTrait for AppTrait {
+    type ActiveObject = AppObject;
+    type AO_Evt = AppEvt;
 
-    fn TOP_initial(_: &mut Self::Context) -> SM_StatePtr<Self> {
+    fn TOP_initial(_: &mut Self::ActiveObject) -> SM_StatePtr<Self> {
         &AppIdle
     }
 }

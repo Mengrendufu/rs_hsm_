@@ -2,9 +2,8 @@
 mod hsmtst_fixture;
 
 use hsmtst_fixture::{
-    SmHsmTst, SmHsmTstSig, SmHsmTst_run_sequence, SMHSMTST_SEQUENCE_A, SMHSMTST_SEQUENCE_B,
+    SMHSMTST_SEQUENCE_A, SMHSMTST_SEQUENCE_B, SmHsmTst, SmHsmTst_run_sequence, SmHsmTstSig,
 };
-use rs_hsm_::SM_DispResult;
 
 #[test]
 fn startup_trace_matches_reference() {
@@ -108,41 +107,40 @@ fn hsmtst_sequence_a_matches_reference_output() {
 }
 
 #[test]
-fn ignored_event_keeps_state_and_reports_ignored() {
+fn ignored_event_keeps_state() {
     let mut machine = SmHsmTst::new();
     let trace_before = machine.trace().to_string();
 
-    let outcome = machine.dispatch(SmHsmTstSig::Z_SIG);
+    machine.dispatch(SmHsmTstSig::Z_SIG);
 
-    assert_eq!(outcome, SM_DispResult::Ignored);
     assert_eq!(machine.trace(), trace_before);
     assert_eq!(machine.curr_name(), "S211");
 }
 
 #[test]
-#[should_panic(expected = "initial transition target must be a descendant of current state")]
+#[should_panic(expected = "DBC assertion failed: rs_hsm_:130")]
 fn init_target_must_be_descendant_of_current_state() {
-    struct BadCtx;
-    struct BadChart;
+    struct BadObject;
+    struct BadSpec;
 
-    impl rs_hsm_::SM_HsmImpl for BadChart {
-        type Context = BadCtx;
-        type Event = ();
+    impl rs_hsm_::SM_HsmTrait for BadSpec {
+        type ActiveObject = BadObject;
+        type AO_Evt = ();
 
-        fn TOP_initial(_me: &mut Self::Context) -> rs_hsm_::SM_StatePtr<Self> {
+        fn TOP_initial(_me: &mut Self::ActiveObject) -> rs_hsm_::SM_StatePtr<Self> {
             &BAD_PARENT
         }
     }
 
-    fn bad_parent_init(_me: &mut BadCtx) -> rs_hsm_::SM_StatePtr<BadChart> {
+    fn bad_parent_init(_me: &mut BadObject) -> rs_hsm_::SM_StatePtr<BadSpec> {
         &BAD_SIBLING
     }
 
-    fn bad_state_handler(_me: &mut BadCtx, _e: &()) -> rs_hsm_::SM_RetState<BadChart> {
+    fn bad_state_handler(_me: &mut BadObject, _e: &()) -> rs_hsm_::SM_RetState<BadSpec> {
         rs_hsm_::SM_RetState::Handled
     }
 
-    static BAD_PARENT: rs_hsm_::SM_HsmState<BadChart> = rs_hsm_::SM_HsmState {
+    static BAD_PARENT: rs_hsm_::SM_HsmState<BadSpec> = rs_hsm_::SM_HsmState {
         super_: None,
         init_: Some(bad_parent_init),
         entry_: None,
@@ -150,7 +148,7 @@ fn init_target_must_be_descendant_of_current_state() {
         handler_: bad_state_handler,
     };
 
-    static BAD_SIBLING: rs_hsm_::SM_HsmState<BadChart> = rs_hsm_::SM_HsmState {
+    static BAD_SIBLING: rs_hsm_::SM_HsmState<BadSpec> = rs_hsm_::SM_HsmState {
         super_: None,
         init_: None,
         entry_: None,
@@ -158,7 +156,73 @@ fn init_target_must_be_descendant_of_current_state() {
         handler_: bad_state_handler,
     };
 
-    let mut ctx = BadCtx;
-    let mut hsm = rs_hsm_::SM_Hsm::<BadChart>::new();
+    let mut ctx = BadObject;
+    let mut hsm = rs_hsm_::SM_Hsm::<BadSpec>::new();
     hsm.init(&mut ctx);
+}
+
+#[test]
+fn invalid_transition_source_fails_before_exit_action() {
+    struct BadObject {
+        exited: bool,
+    }
+    struct BadSpec;
+
+    impl rs_hsm_::SM_HsmTrait for BadSpec {
+        type ActiveObject = BadObject;
+        type AO_Evt = ();
+
+        fn TOP_initial(_me: &mut Self::ActiveObject) -> rs_hsm_::SM_StatePtr<Self> {
+            &BAD_CHILD
+        }
+    }
+
+    fn bad_child_exit(me: &mut BadObject) {
+        me.exited = true;
+    }
+
+    fn bad_state_handler(_me: &mut BadObject, _e: &()) -> rs_hsm_::SM_RetState<BadSpec> {
+        rs_hsm_::SM_RetState::Handled
+    }
+
+    static BAD_PARENT: rs_hsm_::SM_HsmState<BadSpec> = rs_hsm_::SM_HsmState {
+        super_: None,
+        init_: None,
+        entry_: None,
+        exit_: None,
+        handler_: bad_state_handler,
+    };
+
+    static BAD_CHILD: rs_hsm_::SM_HsmState<BadSpec> = rs_hsm_::SM_HsmState {
+        super_: Some(&BAD_PARENT),
+        init_: None,
+        entry_: None,
+        exit_: Some(bad_child_exit),
+        handler_: bad_state_handler,
+    };
+
+    static BAD_SIBLING: rs_hsm_::SM_HsmState<BadSpec> = rs_hsm_::SM_HsmState {
+        super_: None,
+        init_: None,
+        entry_: None,
+        exit_: None,
+        handler_: bad_state_handler,
+    };
+
+    let mut ctx = BadObject { exited: false };
+    let mut hsm = rs_hsm_::SM_Hsm::<BadSpec>::new();
+    hsm.init(&mut ctx);
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        hsm.transition(&mut ctx, &BAD_SIBLING, &BAD_PARENT);
+    }));
+
+    let payload = result.unwrap_err();
+    let message = payload
+        .downcast_ref::<String>()
+        .map(String::as_str)
+        .or_else(|| payload.downcast_ref::<&'static str>().copied())
+        .expect("assert hook should panic with a message");
+    assert!(message.contains("DBC assertion failed: rs_hsm_:310"));
+    assert!(!ctx.exited);
 }
