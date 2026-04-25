@@ -10,10 +10,12 @@ pub use sm_assert::SM_onAssert;
 pub use sm_assert::SM_setOnAssert;
 
 use sm_assert::{
-    DBC_ASSERT, DBC_ENSURE, DBC_ERROR, DBC_INVARIANT, DBC_REQUIRE, SM_ASSERT_COLLECT_TO_TOP_DEPTH,
-    SM_ASSERT_COLLECT_UNTIL_CURR_DEPTH, SM_ASSERT_INIT_TARGET_DESCENDANT,
-    SM_ASSERT_NOT_INITIALIZED, SM_ASSERT_PATH_SLOT, SM_ASSERT_PUBLIC_TRANSITION_SOURCE,
-    SM_ASSERT_TRANSITION_SOURCE,
+    DBC_ASSERT, DBC_ENSURE, DBC_ERROR, DBC_INVARIANT, DBC_REQUIRE,
+
+    SM_ASSERT_COLLECT_TO_TOP_DEPTH,SM_ASSERT_COLLECT_UNTIL_CURR_DEPTH,
+    SM_ASSERT_INIT_TARGET_DESCENDANT,
+    SM_ASSERT_NOT_INITIALIZED, SM_ASSERT_PATH_SLOT,
+    SM_ASSERT_PUBLIC_TRANSITION_SOURCE, SM_ASSERT_TRANSITION_SOURCE,
 };
 
 use core::ptr;
@@ -49,11 +51,15 @@ pub type SM_StatePtr<T> = &'static SM_HsmState<T>;
 pub type SM_ActionHandler<ActiveObject> = fn(me: &mut ActiveObject);
 
 /// Initial transition function pointer.
-pub type SM_InitHandler<T> = fn(me: &mut <T as SM_HsmTrait>::ActiveObject) -> SM_StatePtr<T>;
+pub type SM_InitHandler<T> = fn(
+    me: &mut <T as SM_HsmTrait>::ActiveObject
+) -> SM_StatePtr<T>;
 
 /// State event handler function pointer.
-pub type SM_StateHandler<T> =
-    fn(me: &mut <T as SM_HsmTrait>::ActiveObject, e: &<T as SM_HsmTrait>::AO_Evt) -> SM_RetState<T>;
+pub type SM_StateHandler<T> = fn(
+    me: &mut <T as SM_HsmTrait>::ActiveObject,
+    e: &<T as SM_HsmTrait>::AO_Evt
+) -> SM_RetState<T>;
 
 /// Return value from a state handler.
 #[derive(Clone, Copy)]
