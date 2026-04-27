@@ -66,7 +66,7 @@ pub(crate) const SM_ASSERT_NOT_INITIALIZED: u32 = 200;
 pub(crate) const SM_ASSERT_TRANSITION_SOURCE: u32 = 300;
 pub(crate) const SM_ASSERT_PUBLIC_TRANSITION_SOURCE: u32 = 310;
 
-/// Compact payload forwarded to a customized assert handler.
+/// Compact payload forwarded to the application assert handler.
 #[derive(Clone, Copy, Debug)]
 pub struct SM_AssertInfo {
     /// Module where the assertion failed.
@@ -78,7 +78,7 @@ pub struct SM_AssertInfo {
 /// System-level assert hook signature.
 pub type SM_AssertHandler = fn(info: SM_AssertInfo) -> !;
 
-static mut SM_ASSERT_HANDLER: SM_AssertHandler = SM_default_on_assert;
+static mut SM_ASSERT_HANDLER: Option<SM_AssertHandler> = None;
 
 impl SM_AssertInfo {
     #[inline(always)]
@@ -97,24 +97,24 @@ impl SM_AssertInfo {
 #[inline(always)]
 pub unsafe fn SM_setOnAssert(handler: SM_AssertHandler) {
     unsafe {
-        SM_ASSERT_HANDLER = handler;
+        SM_ASSERT_HANDLER = Some(handler);
     }
 }
 
 /// System-level assert entry used by all DBC macros.
+///
+/// Applications must install a handler with `SM_setOnAssert` during startup.
+/// If a contract fails before installation, execution stops in a non-returning
+/// spin loop instead of depending on `panic!`.
 #[cold]
 #[inline(never)]
 pub fn SM_onAssert(info: SM_AssertInfo) -> ! {
     let handler = unsafe { SM_ASSERT_HANDLER };
-    handler(info)
-}
 
-/// Default fail-fast implementation used by embedded/state-chart hosts that do not
-/// provide their own assert policy.
-///
-/// The default behavior keeps the existing panic-based behavior for compatibility.
-#[cold]
-#[inline(never)]
-pub fn SM_default_on_assert(info: SM_AssertInfo) -> ! {
-    panic!("DBC assertion failed: {}:{}", info.module, info.label);
+    match handler {
+        Some(handler) => handler(info),
+        None => loop {
+            core::hint::spin_loop();
+        },
+    }
 }

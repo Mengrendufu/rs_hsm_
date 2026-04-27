@@ -14,16 +14,13 @@
 mod sm_assert;
 pub use sm_assert::SM_AssertHandler;
 pub use sm_assert::SM_AssertInfo;
-pub use sm_assert::SM_default_on_assert;
 pub use sm_assert::SM_onAssert;
 pub use sm_assert::SM_setOnAssert;
 use sm_assert::{
-    DBC_ASSERT, DBC_ENSURE, DBC_ERROR, DBC_INVARIANT, DBC_REQUIRE,
-
-    SM_ASSERT_COLLECT_TO_TOP_DEPTH,SM_ASSERT_COLLECT_UNTIL_CURR_DEPTH,
-    SM_ASSERT_INIT_TARGET_DESCENDANT,
-    SM_ASSERT_NOT_INITIALIZED, SM_ASSERT_PATH_SLOT,
-    SM_ASSERT_PUBLIC_TRANSITION_SOURCE, SM_ASSERT_TRANSITION_SOURCE,
+    DBC_ASSERT, DBC_ENSURE, DBC_ERROR, DBC_INVARIANT, DBC_REQUIRE, SM_ASSERT_COLLECT_TO_TOP_DEPTH,
+    SM_ASSERT_COLLECT_UNTIL_CURR_DEPTH, SM_ASSERT_INIT_TARGET_DESCENDANT,
+    SM_ASSERT_NOT_INITIALIZED, SM_ASSERT_PATH_SLOT, SM_ASSERT_PUBLIC_TRANSITION_SOURCE,
+    SM_ASSERT_TRANSITION_SOURCE,
 };
 //............................................................................
 use core::ptr;

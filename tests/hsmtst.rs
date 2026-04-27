@@ -4,6 +4,19 @@ mod hsmtst_fixture;
 use hsmtst_fixture::{
     SMHSMTST_SEQUENCE_A, SMHSMTST_SEQUENCE_B, SmHsmTst, SmHsmTst_run_sequence, SmHsmTstSig,
 };
+use std::sync::Once;
+
+fn test_on_assert(info: rs_hsm_::SM_AssertInfo) -> ! {
+    panic!("DBC assertion failed: {}:{}", info.module, info.label);
+}
+
+fn install_test_assert_handler() {
+    static INSTALL: Once = Once::new();
+
+    INSTALL.call_once(|| unsafe {
+        rs_hsm_::SM_setOnAssert(test_on_assert);
+    });
+}
 
 #[test]
 fn startup_trace_matches_reference() {
@@ -120,6 +133,8 @@ fn ignored_event_keeps_state() {
 #[test]
 #[should_panic(expected = "DBC assertion failed: rs_hsm_:130")]
 fn init_target_must_be_descendant_of_current_state() {
+    install_test_assert_handler();
+
     struct BadObject;
     struct BadSpec;
 
@@ -163,6 +178,8 @@ fn init_target_must_be_descendant_of_current_state() {
 
 #[test]
 fn invalid_transition_source_fails_before_exit_action() {
+    install_test_assert_handler();
+
     struct BadObject {
         exited: bool,
     }
