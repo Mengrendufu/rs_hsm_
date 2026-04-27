@@ -1,14 +1,22 @@
+//============================================================================
+// Copyright (C) 2026 Sunny Matato
+//
+// This program is free software. It comes without any warranty, to
+// the extent permitted by applicable law. You can redistribute it
+// and/or modify it under the terms of the Do What The Fuck You Want
+// To Public License, Version 2, as published by Sam Hocevar.
+// See http://www.wtfpl.net/ for more details.
+//============================================================================
 #![no_std]
 #![allow(non_camel_case_types, non_snake_case)]
 
+//============================================================================
 mod sm_assert;
-
 pub use sm_assert::SM_AssertHandler;
 pub use sm_assert::SM_AssertInfo;
 pub use sm_assert::SM_default_on_assert;
 pub use sm_assert::SM_onAssert;
 pub use sm_assert::SM_setOnAssert;
-
 use sm_assert::{
     DBC_ASSERT, DBC_ENSURE, DBC_ERROR, DBC_INVARIANT, DBC_REQUIRE,
 
@@ -17,7 +25,7 @@ use sm_assert::{
     SM_ASSERT_NOT_INITIALIZED, SM_ASSERT_PATH_SLOT,
     SM_ASSERT_PUBLIC_TRANSITION_SOURCE, SM_ASSERT_TRANSITION_SOURCE,
 };
-
+//............................................................................
 use core::ptr;
 
 //============================================================================
