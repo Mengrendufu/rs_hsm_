@@ -96,6 +96,8 @@ impl SM_AssertInfo {
 /// another context can call `SM_onAssert` is a data race.
 #[inline(always)]
 pub unsafe fn SM_setOnAssert(handler: SM_AssertHandler) {
+    // SAFETY: the caller must install this hook during single-threaded startup,
+    // before any context can concurrently read it through `SM_onAssert`.
     unsafe {
         SM_ASSERT_HANDLER = Some(handler);
     }
@@ -109,6 +111,8 @@ pub unsafe fn SM_setOnAssert(handler: SM_AssertHandler) {
 #[cold]
 #[inline(never)]
 pub fn SM_onAssert(info: SM_AssertInfo) -> ! {
+    // SAFETY: after startup the hook is treated as immutable global state. A
+    // concurrent call to `SM_setOnAssert` would violate that API contract.
     let handler = unsafe { SM_ASSERT_HANDLER };
 
     match handler {
