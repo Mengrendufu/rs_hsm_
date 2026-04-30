@@ -74,6 +74,10 @@ pub const SMHSMTST_SEQUENCE_B: &[SmHsmTstSig] = &[
 
 pub struct SmHsmTst {
     sm_hsm_: SM_Hsm<SmHsmTstSpec, 5>,
+    ao: SmHsmTstAo,
+}
+
+struct SmHsmTstAo {
     trace: String,
     foo: u8,
 }
@@ -81,7 +85,7 @@ pub struct SmHsmTst {
 struct SmHsmTstSpec;
 
 impl SM_HsmTrait for SmHsmTstSpec {
-    type ActiveObject = SmHsmTst;
+    type ActiveObject = SmHsmTstAo;
     type AO_Evt = SmHsmTstEvt;
 
     fn TOP_initial(me: &mut Self::ActiveObject) -> SM_StatePtr<Self> {
@@ -90,24 +94,24 @@ impl SM_HsmTrait for SmHsmTstSpec {
     }
 }
 
-fn SmHsmTst_trace(me: &mut SmHsmTst, msg: &str) {
+fn SmHsmTst_trace(me: &mut SmHsmTstAo, msg: &str) {
     me.trace.push_str(msg);
 }
 
-fn SmHsmTst_s_init_(me: &mut SmHsmTst) -> SM_StatePtr<SmHsmTstSpec> {
+fn SmHsmTst_s_init_(me: &mut SmHsmTstAo) -> SM_StatePtr<SmHsmTstSpec> {
     SmHsmTst_trace(me, "s-INIT.");
     &SmHsmTst_s11
 }
 
-fn SmHsmTst_s_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s-ENTRY.");
 }
 
-fn SmHsmTst_s_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s-EXIT.");
 }
 
-fn SmHsmTst_s_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::I_SIG if me.foo != 0 => {
             me.foo = 0;
@@ -123,20 +127,20 @@ fn SmHsmTst_s_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> 
     }
 }
 
-fn SmHsmTst_s1_init_(me: &mut SmHsmTst) -> SM_StatePtr<SmHsmTstSpec> {
+fn SmHsmTst_s1_init_(me: &mut SmHsmTstAo) -> SM_StatePtr<SmHsmTstSpec> {
     SmHsmTst_trace(me, "s1-INIT.");
     &SmHsmTst_s11
 }
 
-fn SmHsmTst_s1_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s1_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s1-ENTRY.");
 }
 
-fn SmHsmTst_s1_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s1_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s1-EXIT.");
 }
 
-fn SmHsmTst_s1_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s1_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::I_SIG => {
             SmHsmTst_trace(me, "s1-I.");
@@ -168,15 +172,15 @@ fn SmHsmTst_s1_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec>
     }
 }
 
-fn SmHsmTst_s11_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s11_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s11-ENTRY.");
 }
 
-fn SmHsmTst_s11_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s11_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s11-EXIT.");
 }
 
-fn SmHsmTst_s11_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s11_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::H_SIG => {
             SmHsmTst_trace(me, "s11-H.");
@@ -196,20 +200,20 @@ fn SmHsmTst_s11_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec
     }
 }
 
-fn SmHsmTst_s2_init_(me: &mut SmHsmTst) -> SM_StatePtr<SmHsmTstSpec> {
+fn SmHsmTst_s2_init_(me: &mut SmHsmTstAo) -> SM_StatePtr<SmHsmTstSpec> {
     SmHsmTst_trace(me, "s2-INIT.");
     &SmHsmTst_s211
 }
 
-fn SmHsmTst_s2_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s2_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s2-ENTRY.");
 }
 
-fn SmHsmTst_s2_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s2_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s2-EXIT.");
 }
 
-fn SmHsmTst_s2_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s2_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::I_SIG if me.foo == 0 => {
             me.foo = 1;
@@ -229,20 +233,20 @@ fn SmHsmTst_s2_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec>
     }
 }
 
-fn SmHsmTst_s21_init_(me: &mut SmHsmTst) -> SM_StatePtr<SmHsmTstSpec> {
+fn SmHsmTst_s21_init_(me: &mut SmHsmTstAo) -> SM_StatePtr<SmHsmTstSpec> {
     SmHsmTst_trace(me, "s21-INIT.");
     &SmHsmTst_s211
 }
 
-fn SmHsmTst_s21_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s21_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s21-ENTRY.");
 }
 
-fn SmHsmTst_s21_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s21_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s21-EXIT.");
 }
 
-fn SmHsmTst_s21_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s21_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::G_SIG => {
             SmHsmTst_trace(me, "s21-G.");
@@ -260,15 +264,15 @@ fn SmHsmTst_s21_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec
     }
 }
 
-fn SmHsmTst_s211_entry_(me: &mut SmHsmTst) {
+fn SmHsmTst_s211_entry_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s211-ENTRY.");
 }
 
-fn SmHsmTst_s211_exit_(me: &mut SmHsmTst) {
+fn SmHsmTst_s211_exit_(me: &mut SmHsmTstAo) {
     SmHsmTst_trace(me, "s211-EXIT.");
 }
 
-fn SmHsmTst_s211_(me: &mut SmHsmTst, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
+fn SmHsmTst_s211_(me: &mut SmHsmTstAo, e: &SmHsmTstEvt) -> SM_RetState<SmHsmTstSpec> {
     match e.sig {
         SmHsmTstSig::H_SIG => {
             SmHsmTst_trace(me, "s211-H.");
@@ -364,28 +368,23 @@ impl SmHsmTst {
     pub fn new() -> Self {
         let mut me = Self {
             sm_hsm_: SM_Hsm::<SmHsmTstSpec, 5>::new(),
-            trace: String::new(),
-            foo: 0,
+            ao: SmHsmTstAo {
+                trace: String::new(),
+                foo: 0,
+            },
         };
         me.init();
         me
     }
 
     fn init(&mut self) {
-        let me = self as *mut Self;
-        let sm_hsm_ = &mut self.sm_hsm_ as *mut SM_Hsm<SmHsmTstSpec, 5>;
-
-        // The HSM is embedded in the active object. This mirrors the C
-        // container style while keeping the aliasing window local to the call.
-        unsafe {
-            (*sm_hsm_).init(&mut *me);
-        }
+        self.sm_hsm_.init(&mut self.ao);
     }
 
     // TEST-ONLY: exposes trace text for assertions and example output.
     #[allow(dead_code)]
     pub fn trace(&self) -> &str {
-        &self.trace
+        &self.ao.trace
     }
 
     // TEST-ONLY: converts the current state pointer into a readable name.
@@ -400,19 +399,12 @@ impl SmHsmTst {
 
     pub fn dispatch(&mut self, sig: SmHsmTstSig) {
         let e = SmHsmTstEvt::new(sig);
-        let me = self as *mut Self;
-        let sm_hsm_ = &mut self.sm_hsm_ as *mut SM_Hsm<SmHsmTstSpec, 5>;
-
-        // State handlers mutate the active object while the embedded HSM
-        // mutates only its own current-state pointer.
-        unsafe {
-            (*sm_hsm_).dispatch(&mut *me, &e);
-        }
+        self.sm_hsm_.dispatch(&mut self.ao, &e);
     }
 
     // TEST-ONLY: adds readable separators between dispatched events.
     pub fn dispatch_with_separator(&mut self, sig: SmHsmTstSig) {
-        SmHsmTst_trace(self, "\n");
+        SmHsmTst_trace(&mut self.ao, "\n");
         self.dispatch(sig);
     }
 
@@ -423,7 +415,7 @@ impl SmHsmTst {
                 .curr()
                 .expect("hsmtst machine must stay initialized"),
         );
-        let trace = self.trace;
+        let trace = self.ao.trace;
         SmHsmTstRun { trace, curr_name }
     }
 }
